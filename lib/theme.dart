@@ -15,4 +15,10 @@ FontWeight medium = FontWeight.w500;
 FontWeight semiBold = FontWeight.w600;
 FontWeight bold = FontWeight.w700;
 
-// Size widthSize = MediaQuery(data: data, child: child)
+String capitalize(words) {
+  return words
+      .toLowerCase()
+      .split(" ")
+      .map((word) => word[0].toUpperCase() + word.substring(1, word.length))
+      .join(" ");
+}
