@@ -4,6 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:tambal_ban/ad_helper.dart';
+import 'package:tambal_ban/cubit/connected_cubit.dart';
 import 'package:tambal_ban/cubit/place_cubit.dart';
 import 'package:tambal_ban/model/place_model.dart';
 import 'package:tambal_ban/pages/detail.dart';
@@ -19,12 +23,33 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  bool isLoading = false;
   Position? position;
   double lat = 0, long = 0;
   StreamSubscription<Position>? positionStream;
   GoogleMapController? mapController;
   LatLng center = const LatLng(-6.907731, 109.730173);
   double distanceInMeters = 0.0;
+  Iterable markers = {};
+  BannerAd? _bannerAd;
+
+  _initBannerAd() {
+    BannerAd(
+        adUnitId: AdHelper.bannerAdUnitId,
+        request: const AdRequest(),
+        size: AdSize.banner,
+        listener: BannerAdListener(
+          onAdLoaded: (ad) {
+            setState(() {
+              _bannerAd = ad as BannerAd;
+            });
+          },
+          onAdFailedToLoad: (ad, err) {
+            print('Failed to load a banner ad: ${err.message}');
+            ad.dispose();
+          },
+        )).load();
+  }
 
   void onMapCreated(GoogleMapController controller) {
     mapController = controller;
@@ -49,7 +74,11 @@ class _HomePageState extends State<HomePage> {
     long = position!.longitude;
 
     setState(() {
-      center = LatLng(position!.latitude, position!.longitude);
+      if (position == null) {
+        isLoading = true;
+      } else {
+        center = LatLng(position!.latitude, position!.longitude);
+      }
     });
 
     mapController?.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
@@ -58,20 +87,50 @@ class _HomePageState extends State<HomePage> {
     )));
   }
 
+  addMarkers(state, bottomSheet) async {
+    List<PlaceModel> places = state.places;
+    var sort = sortByDistance(places);
+    BitmapDescriptor customMarker = await BitmapDescriptor.fromAssetImage(
+        const ImageConfiguration(), 'assets/custom-mark.png');
+    markers = Iterable.generate(sort.length, (index) {
+      return Marker(
+          markerId: MarkerId(sort[index]['items'].name),
+          position: LatLng(
+            sort[index]['items'].latitude,
+            sort[index]['items'].longitude,
+          ),
+          flat: true,
+          infoWindow: InfoWindow(
+              title: capitalize(sort[index]['items'].name),
+              snippet: sort[index]['items'].openTime,
+              onTap: () {
+                bottomSheet(
+                  state,
+                  index,
+                );
+              }),
+          icon: customMarker);
+    });
+  }
+
   List<Map> sortByDistance(List<PlaceModel> places) {
     List<Map<dynamic, dynamic>> placesWithdistance = [];
 
-    for (var place in places) {
-      distanceInMeters = Geolocator.distanceBetween(
-              lat, long, place.latitude, place.longitude) /
-          1000;
+    if (places.isNotEmpty) {
+      for (var place in places) {
+        distanceInMeters = Geolocator.distanceBetween(
+                lat, long, place.latitude, place.longitude) /
+            1000;
 
-      placesWithdistance.add({
-        'items': place,
-        'distance': distanceInMeters,
-        'lat': lat,
-        'long': long
-      });
+        placesWithdistance.add({
+          'items': place,
+          'distance': distanceInMeters,
+          'lat': lat,
+          'long': long
+        });
+      }
+    } else {
+      print('Data not found');
     }
 
     placesWithdistance.sort((a, b) => a['distance'].compareTo(b['distance']));
@@ -83,165 +142,217 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     context.read<PlaceCubit>().fetchPlaces();
     getLocation();
+    _initBannerAd();
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    Future bottomSheet(List<PlaceModel> places, int index) {
+    Future bottomSheet(state, int index) {
+      List<PlaceModel> places = state.places;
       var sort = sortByDistance(places);
       return showModalBottomSheet(
           context: context,
           builder: (builder) {
-            return Container(
-              height: 300.0,
-              width: double.infinity,
-              padding:
-                  const EdgeInsets.symmetric(vertical: 16.0, horizontal: 24.0),
-              color: whiteColor,
-              child: Container(
-                decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10.0),
-                    boxShadow: [
-                      BoxShadow(
-                          color: blackColor.withOpacity(0.2),
-                          blurRadius: 30,
-                          offset: const Offset(0, 20))
-                    ]),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                          topRight: Radius.circular(8),
-                          topLeft: Radius.circular(8)),
-                      child: Image.network(
-                        sort[index]['items'].imageUrl,
-                        fit: BoxFit.cover,
-                        semanticLabel: sort[index]['items'].name,
+            return state is PlaceLoading
+                ? Shimmer.fromColors(
+                    baseColor: grayColor.withOpacity(0.5),
+                    highlightColor: grayColor.withOpacity(0.1),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          height: 300.0,
+                          decoration: BoxDecoration(
+                              color: grayColor.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(8.0)),
+                        ),
+                        const SizedBox(
+                          height: 12,
+                        ),
+                        Container(
+                          width: double.infinity,
+                          height: 80.0,
+                          decoration: BoxDecoration(
+                              color: grayColor.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(8.0)),
+                        ),
+                      ],
+                    ),
+                  )
+                : Container(
+                    height: 300.0,
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 16.0, horizontal: 24.0),
+                    color: whiteColor,
+                    child: Container(
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10.0),
+                          boxShadow: [
+                            BoxShadow(
+                                color: blackColor.withOpacity(0.2),
+                                blurRadius: 30,
+                                offset: const Offset(0, 20))
+                          ]),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                  topRight: Radius.circular(8.0),
+                                  topLeft: Radius.circular(8.0)),
+                              child: Image.network(
+                                sort[index]['items'].imageUrl,
+                                scale: 1.4,
+                                fit: BoxFit.cover,
+                                semanticLabel: sort[index]['items'].name,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 8.0, horizontal: 16.0),
+                            child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    capitalize(sort[index]['items'].name),
+                                    maxLines: 1,
+                                    style: blackTextStyle.copyWith(
+                                      fontSize: 16.0,
+                                      fontWeight: semiBold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(
+                                    height: 4.0,
+                                  ),
+                                  Text(
+                                    capitalize(sort[index]['items'].address),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        grayTextStyle.copyWith(fontSize: 12.0),
+                                  ),
+                                  const SizedBox(
+                                    height: 6.0,
+                                  ),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(Icons.watch_later_outlined,
+                                                  size: 16.0,
+                                                  color: greenColor),
+                                              const SizedBox(
+                                                width: 4.0,
+                                              ),
+                                              Text(
+                                                sort[index]['items'].openTime,
+                                                style: grayTextStyle.copyWith(
+                                                    fontSize: 12.0,
+                                                    color: greenColor),
+                                              )
+                                            ],
+                                          ),
+                                          const SizedBox(
+                                            height: 4.0,
+                                          ),
+                                          Row(
+                                            children: [
+                                              Icon(Icons.near_me_outlined,
+                                                  size: 16.0, color: grayColor),
+                                              const SizedBox(
+                                                width: 4.0,
+                                              ),
+                                              Text(
+                                                  '${sort[index]['distance'].toStringAsFixed(2)} km',
+                                                  style: grayTextStyle.copyWith(
+                                                    fontSize: 12.0,
+                                                  ))
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                      TextButton(
+                                          onPressed: () {
+                                            Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      DetailPage(sort[index]),
+                                                ));
+                                          },
+                                          style: TextButton.styleFrom(
+                                              backgroundColor: greenColor,
+                                              fixedSize:
+                                                  const Size(100.0, 32.0)),
+                                          child: Text(
+                                            'Lihat Detail',
+                                            style: whiteTextStyle.copyWith(
+                                                fontSize: 12.0),
+                                          )),
+                                    ],
+                                  ),
+                                ]),
+                          ),
+                        ],
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 8.0, horizontal: 16.0),
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              capitalize(sort[index]['items'].name),
-                              maxLines: 1,
-                              style: blackTextStyle.copyWith(
-                                fontSize: 16.0,
-                                fontWeight: semiBold,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(
-                              height: 4.0,
-                            ),
-                            Text(
-                              capitalize(sort[index]['items'].address),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: grayTextStyle.copyWith(fontSize: 12.0),
-                            ),
-                            const SizedBox(
-                              height: 6.0,
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(Icons.watch_later_outlined,
-                                            size: 16.0, color: greenColor),
-                                        const SizedBox(
-                                          width: 4.0,
-                                        ),
-                                        Text(
-                                          sort[index]['items'].openTime,
-                                          style: grayTextStyle.copyWith(
-                                              fontSize: 12.0,
-                                              color: greenColor),
-                                        )
-                                      ],
-                                    ),
-                                    const SizedBox(
-                                      height: 4.0,
-                                    ),
-                                    Row(
-                                      children: [
-                                        Icon(Icons.near_me_outlined,
-                                            size: 16.0, color: grayColor),
-                                        const SizedBox(
-                                          width: 4.0,
-                                        ),
-                                        Text(
-                                            '${sort[index]['distance'].toStringAsFixed(2)} km',
-                                            style: grayTextStyle.copyWith(
-                                              fontSize: 12.0,
-                                            ))
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                TextButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                DetailPage(sort[index]),
-                                          ));
-                                    },
-                                    style: TextButton.styleFrom(
-                                        backgroundColor: greenColor,
-                                        fixedSize: const Size(100.0, 32.0)),
-                                    child: Text(
-                                      'Lihat Detail',
-                                      style: whiteTextStyle.copyWith(
-                                          fontSize: 12.0),
-                                    )),
-                              ],
-                            ),
-                          ]),
-                    ),
-                  ],
-                ),
-              ),
-            );
+                  );
           });
     }
 
-    Widget map(List<PlaceModel> places) {
-      var sort = sortByDistance(places);
-      Iterable _markers = Iterable.generate(sort.length, (index) {
-        return Marker(
-            markerId: MarkerId(sort[index]['items'].name),
-            position: LatLng(
-              sort[index]['items'].latitude,
-              sort[index]['items'].longitude,
-            ),
-            flat: true,
-            infoWindow: InfoWindow(
-                title: capitalize(sort[index]['items'].name),
-                snippet: sort[index]['items'].openTime,
-                onTap: () {
-                  bottomSheet(places, index);
-                }),
-            icon: BitmapDescriptor.defaultMarker);
-      });
-
-      return GoogleMap(
-        myLocationEnabled: true,
-        onMapCreated: onMapCreated,
-        initialCameraPosition: CameraPosition(target: center, zoom: 12.0),
-        markers: Set.from(_markers),
-        mapType: MapType.normal,
+    Widget map() {
+      return BlocConsumer<PlaceCubit, PlaceState>(
+        listener: (context, state) {
+          if (state is PlaceFailed) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                backgroundColor: Colors.red,
+                content: Text(
+                  state.error,
+                  style: whiteTextStyle,
+                )));
+          }
+        },
+        builder: (context, state) {
+          if (state is PlaceLoading) {
+            return SizedBox(
+                child: Shimmer.fromColors(
+              baseColor: grayColor.withOpacity(0.5),
+              highlightColor: grayColor.withOpacity(0.1),
+              child: Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                        color: grayColor.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(8.0)),
+                  ),
+                ],
+              ),
+            ));
+          } else if (state is PlaceSuccess) {
+            addMarkers(state, bottomSheet);
+          }
+          return GoogleMap(
+            myLocationEnabled: true,
+            onMapCreated: onMapCreated,
+            initialCameraPosition: CameraPosition(target: center, zoom: 12.0),
+            markers: Set.from(markers),
+            mapType: MapType.normal,
+          );
+        },
       );
     }
 
@@ -261,9 +372,9 @@ class _HomePageState extends State<HomePage> {
                 borderRadius: BorderRadius.circular(30.0),
                 boxShadow: [
                   BoxShadow(
-                      color: whiteColor.withOpacity(0.8),
-                      offset: const Offset(0, 20),
-                      blurRadius: 40.0)
+                      color: whiteColor.withOpacity(0.5),
+                      offset: const Offset(0, 10),
+                      blurRadius: 20.0)
                 ]),
             child: Row(
               children: [
@@ -283,12 +394,11 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    Widget nearestPlace(List<PlaceModel> places) {
-      var sort = sortByDistance(places);
+    Widget nearestPlace() {
       return SizedBox.expand(
         child: DraggableScrollableSheet(
-          initialChildSize: 0.35,
-          minChildSize: 0.125,
+          initialChildSize: 0.3,
+          minChildSize: 0.15,
           maxChildSize: 0.75,
           builder: (context, scrollController) {
             return Container(
@@ -323,127 +433,234 @@ class _HomePageState extends State<HomePage> {
                         'Tambal ban terdekat',
                         style: blackTextStyle.copyWith(fontSize: 18.0),
                       ),
-                      const SizedBox(
-                        height: 12.0,
-                      ),
-                      sort[0]['distance'] < 20
-                          ? Expanded(
-                              child: ListView.builder(
-                                controller: scrollController,
-                                shrinkWrap: true,
-                                itemCount: sort.length < 20 ? sort.length : 20,
-                                itemBuilder: (context, index) {
-                                  return sort[index]['distance'] < 20
-                                      ? PlaceList(
-                                          sort[index],
-                                          onPressed: () {
-                                            setState(() {
-                                              center = LatLng(
-                                                  sort[index]['items'].latitude,
-                                                  sort[index]['items']
-                                                      .longitude);
-                                            });
-                                            mapController?.animateCamera(
-                                                CameraUpdate.newCameraPosition(
-                                                    CameraPosition(
-                                              target: center,
-                                              zoom: 14.0,
-                                            )));
-                                            bottomSheet(places, index);
-                                          },
-                                        )
-                                      : const SizedBox();
-                                },
-                              ),
-                            )
-                          : Container(
-                              margin: const EdgeInsets.only(top: 24.0),
-                              child: Column(children: [
-                                Text(
-                                  'Maaf, belum ada data lokasi tambal ban di dekat Anda!',
-                                  style: grayTextStyle,
-                                  textAlign: TextAlign.center,
+                      BlocConsumer<PlaceCubit, PlaceState>(
+                          listener: (context, state) {
+                        if (state is PlaceFailed) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              backgroundColor: Colors.red,
+                              content: Text(
+                                state.error,
+                                style: whiteTextStyle,
+                              )));
+                        }
+                      }, builder: (context, state) {
+                        if (state is PlaceLoading) {
+                          return SizedBox(
+                              child: Shimmer.fromColors(
+                            baseColor: grayColor.withOpacity(0.5),
+                            highlightColor: grayColor.withOpacity(0.1),
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                  height: 80.0,
+                                  decoration: BoxDecoration(
+                                      color: grayColor.withOpacity(0.5),
+                                      borderRadius: BorderRadius.circular(8.0)),
                                 ),
                                 const SizedBox(
-                                  height: 8.0,
+                                  height: 12,
                                 ),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pushNamed(context, '/addPlace');
-                                  },
-                                  style: TextButton.styleFrom(
-                                      backgroundColor: greenColor,
-                                      minimumSize: const Size(180, 40),
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8.0))),
-                                  child: Text(
-                                    'Tambah Tambal Ban',
-                                    style: whiteTextStyle,
-                                  ),
-                                )
-                              ]),
+                                Container(
+                                  width: double.infinity,
+                                  height: 80.0,
+                                  decoration: BoxDecoration(
+                                      color: grayColor.withOpacity(0.5),
+                                      borderRadius: BorderRadius.circular(8.0)),
+                                ),
+                              ],
                             ),
+                          ));
+                        } else if (state is PlaceSuccess) {
+                          List<PlaceModel> places = state.places;
+                          var sort = sortByDistance(places);
+                          return sort.isEmpty
+                              ? Container(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Text(
+                                    'Belum ada data lokasi tambal ban!',
+                                    style: blackTextStyle.copyWith(
+                                        fontWeight: medium, fontSize: 16.0),
+                                    textAlign: TextAlign.center,
+                                  ))
+                              : sort[0]['distance'] < 20
+                                  ? Expanded(
+                                      child: ListView.builder(
+                                        controller: scrollController,
+                                        shrinkWrap: true,
+                                        itemCount:
+                                            sort.length < 20 ? sort.length : 20,
+                                        itemBuilder: (context, index) {
+                                          return sort[index]['distance'] < 20
+                                              ? PlaceList(
+                                                  sort[index],
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      center = LatLng(
+                                                          sort[index]['items']
+                                                              .latitude,
+                                                          sort[index]['items']
+                                                              .longitude);
+                                                    });
+                                                    mapController?.animateCamera(
+                                                        CameraUpdate
+                                                            .newCameraPosition(
+                                                                CameraPosition(
+                                                      target: center,
+                                                      zoom: 14.0,
+                                                    )));
+                                                    bottomSheet(state, index);
+                                                  },
+                                                )
+                                              : const SizedBox();
+                                        },
+                                      ),
+                                    )
+                                  : Container(
+                                      padding: const EdgeInsets.all(24),
+                                      child: Column(children: [
+                                        Text(
+                                          'Belum ada data lokasi tambal ban terdekat!',
+                                          style: blackTextStyle.copyWith(
+                                              fontWeight: medium,
+                                              fontSize: 16.0),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        const SizedBox(
+                                          height: 8.0,
+                                        ),
+                                        Text(
+                                          'Tambahkan data lokasi tambal ban di sekitar Anda!',
+                                          style: grayTextStyle,
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        const SizedBox(
+                                          height: 8.0,
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.pushNamed(
+                                                context, '/add-place');
+                                          },
+                                          style: TextButton.styleFrom(
+                                              backgroundColor: greenColor,
+                                              minimumSize: const Size(180, 40),
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          8.0))),
+                                          child: Text(
+                                            'Tambah Tambal Ban',
+                                            style: whiteTextStyle,
+                                          ),
+                                        )
+                                      ]),
+                                    );
+                        }
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      })
                     ]));
           },
         ),
       );
     }
 
-    return BlocConsumer<PlaceCubit, PlaceState>(
-      listener: (context, state) {
-        if (state is PlaceFailed) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              backgroundColor: Colors.red,
-              content: Text(
-                state.error,
-                style: whiteTextStyle,
-              )));
-        } else if (state is PlaceLoading) {
-          const Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-      },
-      builder: (context, state) {
-        if (state is PlaceSuccess) {
-          return Scaffold(
-            body: SafeArea(
-              child: Stack(
-                children: [
-                  map(state.places),
-                  Container(
-                    width: double.infinity,
-                    height: 180,
-                    decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                          greenColor,
-                          greenColor.withOpacity(0.5),
-                          greenColor.withOpacity(0),
-                        ])),
-                  ),
-                  searchInput(),
-                  nearestPlace(state.places)
-                ],
+    return Scaffold(
+      backgroundColor: whiteColor,
+      body: BlocBuilder<ConnectedCubit, ConnectedState>(
+        builder: (context, state) {
+          if ((state is ConnectedSuccess &&
+                  state.connectionType == ConnectionType.wifi) ||
+              (state is ConnectedSuccess &&
+                  state.connectionType == ConnectionType.mobile)) {
+            return Stack(
+              children: [
+                map(),
+                Container(
+                  width: double.infinity,
+                  height: 180,
+                  decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                        greenColor,
+                        greenColor.withOpacity(0.5),
+                        greenColor.withOpacity(0),
+                      ])),
+                ),
+                searchInput(),
+                nearestPlace(),
+                // display bannerAds when ready
+                if (_bannerAd != null)
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: SizedBox(
+                      width: _bannerAd!.size.width.toDouble(),
+                      height: _bannerAd!.size.height.toDouble(),
+                      child: AdWidget(ad: _bannerAd!),
+                    ),
+                  )
+              ],
+            );
+          } else if (state is ConnectedFailed) {
+            return Center(
+                child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Internet tidak terhubung',
+                  style: blackTextStyle,
+                ),
+                const SizedBox(
+                  height: 12.0,
+                ),
+                TextButton(
+                    onPressed: () {
+                      context
+                          .read<ConnectedCubit>()
+                          .connectivityStreamSubcription;
+                    },
+                    child: Text('Muat Ulang', style: whiteTextStyle),
+                    style: TextButton.styleFrom(backgroundColor: greenColor)),
+              ],
+            ));
+          }
+          return Center(
+              child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Internet tidak terhubung',
+                style: blackTextStyle,
               ),
-            ),
-            floatingActionButton: FloatingActionButton(
-              child: const Icon(
-                Icons.location_searching,
-                color: Colors.white,
+              const SizedBox(
+                height: 12.0,
               ),
-              backgroundColor: greenColor,
-              onPressed: () {
-                getLocation();
-              },
-            ),
-          );
-        }
-        return const SizedBox();
-      },
+              TextButton(
+                  onPressed: () {
+                    context
+                        .read<ConnectedCubit>()
+                        .connectivityStreamSubcription;
+                  },
+                  child: Text('Muat Ulang', style: whiteTextStyle),
+                  style: TextButton.styleFrom(backgroundColor: greenColor)),
+            ],
+          ));
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(
+          Icons.location_searching,
+          color: Colors.white,
+        ),
+        backgroundColor: greenColor,
+        onPressed: () {
+          getLocation();
+        },
+      ),
     );
   }
 }

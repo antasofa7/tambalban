@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:tambal_ban/ad_helper.dart';
+import 'package:tambal_ban/cubit/connected_cubit.dart';
 import 'package:tambal_ban/theme.dart';
 
 class TrackingPage extends StatefulWidget {
@@ -20,8 +24,27 @@ class _DetailPageState extends State<TrackingPage> {
   String googleApiKey = 'AIzaSyA88My8vsi2jeb9_AWZ74Fiyq_rLUJ7ezc';
   Set<Marker> markers = {};
   Map<PolylineId, Polyline> polylines = {};
+  BannerAd? _bannerAd;
 
-  void _onMapCreated(GoogleMapController controller) {
+  _initBannerAd() {
+    BannerAd(
+        adUnitId: AdHelper.bannerAdUnitId,
+        request: const AdRequest(),
+        size: AdSize.banner,
+        listener: BannerAdListener(
+          onAdLoaded: (ad) {
+            setState(() {
+              _bannerAd = ad as BannerAd;
+            });
+          },
+          onAdFailedToLoad: (ad, err) {
+            print('Failed to load a banner ad: ${err.message}');
+            ad.dispose();
+          },
+        )).load();
+  }
+
+  void onMapCreated(GoogleMapController controller) {
     mapController = controller;
   }
 
@@ -29,10 +52,13 @@ class _DetailPageState extends State<TrackingPage> {
   void initState() {
     addMarkers();
     getDirections();
+    _initBannerAd();
     super.initState();
   }
 
   addMarkers() async {
+    BitmapDescriptor customMarker = await BitmapDescriptor.fromAssetImage(
+        const ImageConfiguration(), 'assets/custom-mark.png');
     markers.add(Marker(
         markerId: MarkerId(widget.place['items'].latitude.toString()),
         position: LatLng(
@@ -40,7 +66,7 @@ class _DetailPageState extends State<TrackingPage> {
         infoWindow: InfoWindow(
           title: capitalize(widget.place['items'].name),
         ),
-        icon: BitmapDescriptor.defaultMarker));
+        icon: customMarker));
   }
 
   getDirections() async {
@@ -75,41 +101,69 @@ class _DetailPageState extends State<TrackingPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: whiteColor,
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              floating: true,
-              backgroundColor: greenColor,
-              title: Text(
-                capitalize(widget.place['items'].name),
-                style: whiteTextStyle.copyWith(fontSize: 16.0),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
+    return BlocBuilder<ConnectedCubit, ConnectedState>(
+        builder: (context, state) {
+      if ((state is ConnectedSuccess &&
+              state.connectionType == ConnectionType.wifi) ||
+          (state is ConnectedSuccess &&
+              state.connectionType == ConnectionType.mobile)) {
+        return Scaffold(
+          backgroundColor: whiteColor,
+          appBar: AppBar(
+            backgroundColor: greenColor,
+            title: Text(
+              capitalize(widget.place['items'].name),
+              style: whiteTextStyle.copyWith(fontSize: 18.0),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
-            SliverToBoxAdapter(
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width,
-                height: MediaQuery.of(context).size.height,
-                child: GoogleMap(
-                  onMapCreated: _onMapCreated,
-                  myLocationEnabled: true,
-                  initialCameraPosition: CameraPosition(
-                      target: LatLng(widget.place['items'].latitude,
-                          widget.place['items'].longitude),
-                      zoom: 12.0),
-                  markers: markers,
-                  polylines: Set<Polyline>.of(polylines.values),
-                  mapType: MapType.normal,
+          ),
+          body: Stack(children: [
+            GoogleMap(
+              onMapCreated: onMapCreated,
+              myLocationEnabled: true,
+              initialCameraPosition: CameraPosition(
+                  target: LatLng(widget.place['items'].latitude,
+                      widget.place['items'].longitude),
+                  zoom: 12.0),
+              markers: markers,
+              polylines: Set<Polyline>.of(polylines.values),
+              mapType: MapType.normal,
+            ),
+            if (_bannerAd != null)
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: SizedBox(
+                  width: _bannerAd!.size.width.toDouble(),
+                  height: _bannerAd!.size.height.toDouble(),
+                  child: AdWidget(ad: _bannerAd!),
                 ),
-              ),
-            )
+              )
+          ]),
+        );
+      }
+      return Scaffold(
+        backgroundColor: whiteColor,
+        body: Center(
+            child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Internet tidak terhubung',
+              style: blackTextStyle,
+            ),
+            const SizedBox(
+              height: 12.0,
+            ),
+            TextButton(
+                onPressed: () {
+                  context.read<ConnectedCubit>().connectivityStreamSubcription;
+                },
+                child: Text('Muat Ulang', style: whiteTextStyle),
+                style: TextButton.styleFrom(backgroundColor: greenColor)),
           ],
-        ),
-      ),
-    );
+        )),
+      );
+    });
   }
 }

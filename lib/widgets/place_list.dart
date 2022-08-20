@@ -19,9 +19,10 @@ class _PlaceListState extends State<PlaceList> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12.0),
         width: double.infinity,
+        constraints: const BoxConstraints(minHeight: 70.0),
         decoration: BoxDecoration(boxShadow: [
           BoxShadow(
-              color: blackColor.withOpacity(0.2),
+              color: greenColor.withOpacity(0.2),
               blurRadius: 30,
               offset: const Offset(0, 20))
         ], color: Colors.white, borderRadius: BorderRadius.circular(8.0)),
@@ -29,16 +30,19 @@ class _PlaceListState extends State<PlaceList> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(8.0),
-                      topLeft: Radius.circular(8.0)),
-                  child: Image.network(
-                    widget.place['items'].imageUrl,
-                    height: 75.0,
-                    fit: BoxFit.cover,
-                    semanticLabel: widget.place['items'].name,
-                  )),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 70.0),
+                decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(8.0),
+                        topLeft: Radius.circular(8.0)),
+                    image: DecorationImage(
+                      image: NetworkImage(
+                        widget.place['items'].imageUrl,
+                      ),
+                      fit: BoxFit.cover,
+                    )),
+              ),
             ),
             const SizedBox(
               width: 16.0,
@@ -62,7 +66,7 @@ class _PlaceListState extends State<PlaceList> {
                       height: 2.0,
                     ),
                     Text(capitalize(widget.place['items'].address),
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: grayTextStyle.copyWith(
                           fontSize: 10.0,
