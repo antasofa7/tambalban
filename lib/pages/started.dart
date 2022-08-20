@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:tambal_ban/ad_helper.dart';
 import 'package:tambal_ban/theme.dart';
 
 class StartedPage extends StatefulWidget {
@@ -13,11 +16,42 @@ class _StartedPageState extends State<StartedPage> {
   bool serviceEnabled = false;
   bool hasPermission = false;
   LocationPermission? permission;
+  BannerAd? _bannerAd;
+
+  _initBannerAd() {
+    BannerAd(
+        adUnitId: AdHelper.bannerAdUnitId,
+        request: const AdRequest(),
+        size: AdSize.banner,
+        listener: BannerAdListener(
+          onAdLoaded: (ad) {
+            setState(() {
+              _bannerAd = ad as BannerAd;
+            });
+          },
+          onAdFailedToLoad: (ad, err) {
+            print('Failed to load a banner ad: ${err.message}');
+            ad.dispose();
+          },
+        )).load();
+  }
 
   @override
   void initState() {
     checkGps();
+    _initBannerAd();
     super.initState();
+  }
+
+  checkPermission() async {
+    Map<Permission, PermissionStatus> statuses =
+        await [Permission.camera, Permission.storage].request();
+
+    if (statuses[Permission.camera]!.isGranted) {
+      print('Camera permission is granted');
+    } else if (statuses[Permission.storage]!.isGranted) {
+      print('Storage permission is granted');
+    }
   }
 
   checkGps() async {
@@ -35,10 +69,6 @@ class _StartedPageState extends State<StartedPage> {
         hasPermission = true;
       }
     } else {
-      await Geolocator.openLocationSettings();
-      setState(() {
-        checkGps();
-      });
       print('GPS Service is not enabled, turn on GPS location.');
     }
   }
@@ -46,8 +76,7 @@ class _StartedPageState extends State<StartedPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: SafeArea(
-      child: Stack(
+      body: Stack(
         children: [
           Container(
             width: double.infinity,
@@ -80,6 +109,9 @@ class _StartedPageState extends State<StartedPage> {
                 const Spacer(),
                 InkWell(
                   onTap: () {
+                    setState(() {
+                      checkGps();
+                    });
                     Navigator.pushNamed(context, '/home');
                   },
                   child: Container(
@@ -123,7 +155,7 @@ class _StartedPageState extends State<StartedPage> {
                 ),
                 TextButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, '/addPlace');
+                    Navigator.pushNamed(context, '/add-place');
                   },
                   child: Text(
                     'Tambah tambal ban',
@@ -136,8 +168,18 @@ class _StartedPageState extends State<StartedPage> {
               ],
             ),
           ),
+          // display bannerAds when ready
+          if (_bannerAd != null)
+            Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: _bannerAd!.size.width.toDouble(),
+                height: _bannerAd!.size.height.toDouble(),
+                child: AdWidget(ad: _bannerAd!),
+              ),
+            )
         ],
       ),
-    ));
+    );
   }
 }

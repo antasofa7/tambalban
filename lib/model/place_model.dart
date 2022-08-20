@@ -5,11 +5,12 @@ class PlaceModel extends Equatable {
   final String name;
   final String address;
   final String openTime;
+  final String phoneNumber;
   final double latitude;
   final double longitude;
-  final bool isTambalBan;
-  final bool isIsiAngin;
-  final bool isGantiBan;
+  final bool tubeless;
+  final bool nitrogen;
+  final bool gantiBan;
   final String imageUrl;
 
   const PlaceModel({
@@ -17,11 +18,12 @@ class PlaceModel extends Equatable {
     this.name = '',
     this.address = '',
     this.openTime = '',
+    this.phoneNumber = '',
     this.latitude = 0.0,
     this.longitude = 0.0,
-    this.isTambalBan = true,
-    this.isIsiAngin = true,
-    this.isGantiBan = true,
+    this.tubeless = true,
+    this.nitrogen = true,
+    this.gantiBan = true,
     this.imageUrl = '',
   });
 
@@ -31,11 +33,12 @@ class PlaceModel extends Equatable {
         name: json['name'],
         address: json['address'],
         openTime: json['openTime'],
+        phoneNumber: json['phoneNumber'],
         latitude: json['latitude'],
         longitude: json['longitude'],
-        isTambalBan: json['isTambalBan'],
-        isIsiAngin: json['isIsiAngin'],
-        isGantiBan: json['isGantiBan'],
+        tubeless: json['tubeless'],
+        nitrogen: json['nitrogen'],
+        gantiBan: json['gantiBan'],
         imageUrl: json['imageUrl'],
       );
 
@@ -44,11 +47,12 @@ class PlaceModel extends Equatable {
         'name': name,
         'address': address,
         'openTime': openTime,
+        'phoneNumber': phoneNumber,
         'latitude': latitude,
         'longitude': longitude,
-        'isTambalBan': isTambalBan,
-        'isIsiAngin': isIsiAngin,
-        'isGantiBan': isGantiBan,
+        'tubeless': tubeless,
+        'nitrogen': nitrogen,
+        'gantiBan': gantiBan,
         'imageUrl': imageUrl,
       };
 
@@ -58,11 +62,12 @@ class PlaceModel extends Equatable {
         name,
         address,
         openTime,
+        phoneNumber,
         latitude,
         longitude,
-        isTambalBan,
-        isIsiAngin,
-        isGantiBan,
+        tubeless,
+        nitrogen,
+        gantiBan,
         imageUrl,
       ];
 }

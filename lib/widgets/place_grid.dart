@@ -27,19 +27,24 @@ class _PlaceGridState extends State<PlaceGrid> {
       child: Container(
         decoration: BoxDecoration(boxShadow: [
           BoxShadow(
-              color: blackColor.withOpacity(0.2),
+              color: greenColor.withOpacity(0.2),
               blurRadius: 30,
               offset: const Offset(0, 20))
         ], color: Colors.white, borderRadius: BorderRadius.circular(8.0)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(8.0), topRight: Radius.circular(8.0)),
-            child: Image.network(
-              widget.place['items'].imageUrl,
-              fit: BoxFit.cover,
-              scale: 1.2,
-              semanticLabel: widget.place['items'].name,
+          Expanded(
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 90.0),
+              decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(8.0),
+                      topLeft: Radius.circular(8.0)),
+                  image: DecorationImage(
+                    image: NetworkImage(
+                      widget.place['items'].imageUrl,
+                    ),
+                    fit: BoxFit.cover,
+                  )),
             ),
           ),
           const SizedBox(

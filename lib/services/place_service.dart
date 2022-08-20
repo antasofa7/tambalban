@@ -19,11 +19,12 @@ class PlaceService {
         'name': place.name,
         'address': place.address,
         'openTime': place.openTime,
+        'phoneNumber': place.phoneNumber,
         'latitude': place.latitude,
         'longitude': place.longitude,
-        'isTambalBan': place.isTambalBan,
-        'isIsiAngin': place.isIsiAngin,
-        'isGantiBan': place.isGantiBan,
+        'tubeless': place.tubeless,
+        'nitrogen': place.nitrogen,
+        'gantiBan': place.gantiBan,
         'imageUrl': downloadUrl,
       });
     } catch (err) {
@@ -38,6 +39,7 @@ class PlaceService {
       List<PlaceModel> places = results.docs.map((e) {
         return PlaceModel.fromJson(e.id, e.data() as Map<String, dynamic>);
       }).toList();
+      print('results: $results');
 
       return places;
     } catch (err) {
