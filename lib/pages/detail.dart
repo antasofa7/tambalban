@@ -26,6 +26,7 @@ class _DetailPageState extends State<DetailPage> {
   String googleApiKey = 'AIzaSyA88My8vsi2jeb9_AWZ74Fiyq_rLUJ7ezc';
   Set<Marker> markers = {};
   Map<PolylineId, Polyline> polylines = {};
+  double top = 0.0;
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
@@ -86,6 +87,7 @@ class _DetailPageState extends State<DetailPage> {
   Widget build(BuildContext context) {
     String name = widget.place['items'].name;
     String phoneNumber = widget.place['items'].phoneNumber;
+    List<dynamic> vehicle = widget.place['items'].vehicle;
 
     return BlocBuilder<ConnectedCubit, ConnectedState>(
         builder: (context, state) {
@@ -98,94 +100,112 @@ class _DetailPageState extends State<DetailPage> {
           body: CustomScrollView(
             slivers: [
               SliverAppBar(
-                floating: true,
-                expandedHeight: 300.0,
-                backgroundColor: greenColor,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Stack(
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                            image: DecorationImage(
-                                image: NetworkImage(
-                                  widget.place['items'].imageUrl,
-                                ),
-                                fit: BoxFit.cover)),
-                      ),
-                      Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 26.0, vertical: 16.0),
-                          decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                blackColor.withOpacity(0),
-                                blackColor.withOpacity(0.7)
-                              ])))
-                    ],
-                  ),
-                  title: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      SizedBox(
-                        child: Row(
+                  expandedHeight: 300.0,
+                  // collapsedHeight: MediaQuery.of(context).size.height * 0.2,
+                  backgroundColor: greenColor,
+                  // floating: true,
+                  // snap: true,
+                  pinned: true,
+                  flexibleSpace: LayoutBuilder(
+                    builder: (context, constraints) {
+                      top = constraints.biggest.height;
+                      return FlexibleSpaceBar(
+                        background: Stack(
                           children: [
-                            Row(
-                              children: [
-                                Icon(Icons.watch_later_outlined,
-                                    size: 12.0, color: whiteColor),
-                                const SizedBox(
-                                  width: 4.0,
-                                ),
-                                Text(
-                                  widget.place['items'].openTime,
-                                  style: whiteTextStyle.copyWith(
-                                      fontSize: 9.0,
-                                      fontWeight: medium,
-                                      color: whiteColor),
-                                )
-                              ],
+                            Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                  image: DecorationImage(
+                                      image: NetworkImage(
+                                        widget.place['items'].imageUrl,
+                                      ),
+                                      fit: BoxFit.cover)),
                             ),
-                            const SizedBox(
-                              width: 10.0,
-                            ),
-                            Row(
-                              children: [
-                                Icon(Icons.near_me_outlined,
-                                    size: 12.0, color: whiteColor),
-                                const SizedBox(
-                                  width: 4.0,
-                                ),
-                                Text(
-                                    '${widget.place['distance'].toStringAsFixed(2)} km',
-                                    style: whiteTextStyle.copyWith(
-                                      fontSize: 9.0,
-                                      fontWeight: medium,
-                                    ))
-                              ],
-                            ),
+                            Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 26.0, vertical: 16.0),
+                                decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                      blackColor.withOpacity(0),
+                                      blackColor.withOpacity(0.7)
+                                    ])))
                           ],
                         ),
-                      ),
-                      const SizedBox(
-                        height: 6.0,
-                      ),
-                      Text(
-                        capitalize(name),
-                        style: whiteTextStyle.copyWith(
-                            fontSize: 14.0, fontWeight: semiBold),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
-                      )
-                    ],
-                  ),
-                  titlePadding: const EdgeInsets.all(16.0),
-                ),
-              ),
+                        title: Column(
+                          crossAxisAlignment: top !=
+                                  MediaQuery.of(context).padding.top +
+                                      kToolbarHeight
+                              ? CrossAxisAlignment.start
+                              : CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            AnimatedOpacity(
+                                duration: const Duration(milliseconds: 300),
+                                opacity: top !=
+                                        MediaQuery.of(context).padding.top +
+                                            kToolbarHeight
+                                    ? 1.0
+                                    : 0.0,
+                                child: SizedBox(
+                                  child: Row(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(Icons.watch_later_outlined,
+                                              size: 12.0, color: whiteColor),
+                                          const SizedBox(
+                                            width: 4.0,
+                                          ),
+                                          Text(
+                                            widget.place['items'].openTime,
+                                            style: whiteTextStyle.copyWith(
+                                                fontSize: 9.0,
+                                                fontWeight: medium,
+                                                color: whiteColor),
+                                          )
+                                        ],
+                                      ),
+                                      const SizedBox(
+                                        width: 10.0,
+                                      ),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.near_me_outlined,
+                                              size: 12.0, color: whiteColor),
+                                          const SizedBox(
+                                            width: 4.0,
+                                          ),
+                                          Text(
+                                              '${widget.place['distance'].toStringAsFixed(2)} km',
+                                              style: whiteTextStyle.copyWith(
+                                                fontSize: 9.0,
+                                                fontWeight: medium,
+                                              ))
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                )),
+                            const SizedBox(
+                              height: 6.0,
+                            ),
+                            Text(
+                              capitalize(name),
+                              style: whiteTextStyle.copyWith(
+                                  fontSize: 16.0, fontWeight: semiBold),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                            )
+                          ],
+                        ),
+                        titlePadding: const EdgeInsets.all(16.0),
+                      );
+                    },
+                  )),
               SliverToBoxAdapter(
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -199,122 +219,52 @@ class _DetailPageState extends State<DetailPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Layanan',
+                              Text('Kendaraan:',
                                   style: blackTextStyle.copyWith(
                                       fontSize: 16.0, fontWeight: semiBold)),
                               SizedBox(
                                   width: double.infinity,
                                   child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceAround,
-                                    children: [
-                                      Container(
-                                        margin:
-                                            const EdgeInsets.only(top: 10.0),
-                                        padding: const EdgeInsets.all(10.0),
-                                        width: 90.0,
-                                        decoration: BoxDecoration(
-                                            border: Border.all(
-                                                width: 2.0,
-                                                color: widget
-                                                        .place['items'].tubeless
-                                                    ? greenColor
-                                                    : grayColor),
-                                            borderRadius:
-                                                BorderRadius.circular(10.0)),
-                                        child: Column(
-                                          children: [
-                                            Image.asset(
-                                              'assets/icon_tyre.png',
-                                              width: 32.0,
-                                              semanticLabel: 'icon tambal ban',
-                                            ),
-                                            const SizedBox(
-                                              height: 4.0,
-                                            ),
-                                            Text('Tubeless',
-                                                style: blackTextStyle.copyWith(
-                                                    fontSize: 12.0,
-                                                    fontWeight: medium,
-                                                    color: widget.place['items']
-                                                            .tubeless
-                                                        ? blackColor
-                                                        : grayColor)),
-                                          ],
-                                        ),
-                                      ),
-                                      Container(
-                                        margin:
-                                            const EdgeInsets.only(top: 10.0),
-                                        padding: const EdgeInsets.all(10.0),
-                                        width: 90.0,
-                                        decoration: BoxDecoration(
-                                            border: Border.all(
-                                                width: 2.0,
-                                                color: widget
-                                                        .place['items'].nitrogen
-                                                    ? greenColor
-                                                    : grayColor),
-                                            borderRadius:
-                                                BorderRadius.circular(10.0)),
-                                        child: Column(
-                                          children: [
-                                            Image.asset(
-                                              'assets/icon_pump.png',
-                                              width: 32.0,
-                                              semanticLabel: 'icon isi angin',
-                                            ),
-                                            const SizedBox(
-                                              height: 4.0,
-                                            ),
-                                            Text('Nitrogen',
-                                                style: blackTextStyle.copyWith(
-                                                    fontSize: 12.0,
-                                                    fontWeight: medium,
-                                                    color: widget.place['items']
-                                                            .nitrogen
-                                                        ? blackColor
-                                                        : grayColor)),
-                                          ],
-                                        ),
-                                      ),
-                                      Container(
-                                        margin:
-                                            const EdgeInsets.only(top: 10.0),
-                                        padding: const EdgeInsets.all(10.0),
-                                        width: 90.0,
-                                        decoration: BoxDecoration(
-                                            border: Border.all(
-                                                width: 2.0,
-                                                color: widget
-                                                        .place['items'].gantiBan
-                                                    ? greenColor
-                                                    : grayColor),
-                                            borderRadius:
-                                                BorderRadius.circular(10.0)),
-                                        child: Column(
-                                          children: [
-                                            Image.asset(
-                                              'assets/icon_change.png',
-                                              width: 32.0,
-                                              semanticLabel: 'icon ganti ban',
-                                            ),
-                                            const SizedBox(
-                                              height: 4.0,
-                                            ),
-                                            Text('Ganti ban',
-                                                style: blackTextStyle.copyWith(
-                                                    fontSize: 12.0,
-                                                    fontWeight: medium,
-                                                    color: widget.place['items']
-                                                            .gantiBan
-                                                        ? blackColor
-                                                        : grayColor)),
-                                          ],
-                                        ),
-                                      )
-                                    ],
-                                  ))
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.start,
+                                      children: vehicle.map((item) {
+                                        return Container(
+                                          margin: const EdgeInsets.only(
+                                              top: 10.0, right: 10.0),
+                                          padding: const EdgeInsets.all(10.0),
+                                          width: 90.0,
+                                          decoration: BoxDecoration(
+                                              color: const Color(0xffffffff),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: greenColor
+                                                      .withOpacity(0.4),
+                                                  blurRadius: 12.0,
+                                                  offset: const Offset(0, 4.0),
+                                                )
+                                              ],
+                                              borderRadius:
+                                                  BorderRadius.circular(10.0)),
+                                          child: Column(
+                                            children: [
+                                              Image.asset(
+                                                'assets/$item.png',
+                                                width: 32.0,
+                                                semanticLabel: 'kendaraan',
+                                              ),
+                                              const SizedBox(
+                                                height: 4.0,
+                                              ),
+                                              Text(item,
+                                                  style:
+                                                      blackTextStyle.copyWith(
+                                                          fontSize: 12.0,
+                                                          fontWeight: medium,
+                                                          color: blackColor)),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList()))
                             ],
                           )),
                       Container(
@@ -324,7 +274,70 @@ class _DetailPageState extends State<DetailPage> {
                           child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Lokasi',
+                                Text('Terima Panggilan:',
+                                    style: blackTextStyle.copyWith(
+                                        fontSize: 16.0, fontWeight: semiBold)),
+                                const SizedBox(
+                                  height: 10.0,
+                                ),
+                                Row(
+                                  children: [
+                                    widget.place['items'].homeService
+                                        ? Icon(
+                                            Icons.check_box,
+                                            color: greenColor,
+                                          )
+                                        : const Icon(
+                                            Icons.call_rounded,
+                                            color: Colors.red,
+                                          ),
+                                    const SizedBox(
+                                      width: 4.0,
+                                    ),
+                                    Text(
+                                      widget.place['items'].homeService
+                                          ? 'Ya'
+                                          : 'Tidak',
+                                      style: blackTextStyle,
+                                    )
+                                  ],
+                                )
+                              ])),
+                      Container(
+                          margin: const EdgeInsets.only(bottom: 16.0),
+                          width: double.infinity,
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Layanan Lain:',
+                                    style: blackTextStyle.copyWith(
+                                        fontSize: 16.0, fontWeight: semiBold)),
+                                const SizedBox(
+                                  height: 10.0,
+                                ),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.build_circle,
+                                      color: greenColor,
+                                    ),
+                                    const SizedBox(
+                                      width: 4.0,
+                                    ),
+                                    Text(
+                                      widget.place['items'].services,
+                                      style: blackTextStyle,
+                                    )
+                                  ],
+                                )
+                              ])),
+                      Container(
+                          margin: const EdgeInsets.only(bottom: 16.0),
+                          width: double.infinity,
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Lokasi:',
                                     style: blackTextStyle.copyWith(
                                         fontSize: 16.0, fontWeight: semiBold)),
                                 const SizedBox(

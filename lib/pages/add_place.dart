@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -9,6 +10,9 @@ import 'package:tambal_ban/cubit/connected_cubit.dart';
 import 'package:tambal_ban/cubit/place_cubit.dart';
 import 'package:tambal_ban/model/place_model.dart';
 import 'package:tambal_ban/theme.dart';
+import 'package:tambal_ban/widgets/checkbox.dart';
+import 'package:tambal_ban/widgets/input.dart';
+import 'package:tambal_ban/widgets/radio.dart';
 
 class AddPlace extends StatefulWidget {
   const AddPlace({Key? key}) : super(key: key);
@@ -19,9 +23,12 @@ class AddPlace extends StatefulWidget {
 
 class _AddPlaceState extends State<AddPlace> {
   bool isLoading = false;
-  bool isCheckedTubeless = false;
-  bool isCheckedNitrogen = false;
-  bool isCheckedGantiBan = false;
+  bool isCheckedBycicle = false;
+  bool isCheckedMotorbike = false;
+  bool isCheckedCar = false;
+  Position? position;
+  bool homeServiceSelected = false;
+
   String helperTextImage = '';
   String helperTextName = '';
   String helperTextAddress = '';
@@ -29,6 +36,8 @@ class _AddPlaceState extends State<AddPlace> {
   String helperTextPhoneNumber = '';
   String helperTextLatitude = '';
   String helperTextLongitude = '';
+  String helperTextVehicle = '';
+  String helperTextServices = '';
   final TextEditingController nameController = TextEditingController(text: '');
   final TextEditingController addressController =
       TextEditingController(text: '');
@@ -40,7 +49,8 @@ class _AddPlaceState extends State<AddPlace> {
       TextEditingController(text: '');
   final TextEditingController longitudeController =
       TextEditingController(text: '');
-  Position? position;
+  final TextEditingController servicesController =
+      TextEditingController(text: '');
 
   void getLocation() async {
     setState(() {
@@ -63,7 +73,8 @@ class _AddPlaceState extends State<AddPlace> {
 
   Future _openCamera() async {
     try {
-      final pickedImage = await picker.pickImage(source: ImageSource.camera);
+      final pickedImage = await picker.pickImage(
+          source: ImageSource.camera, maxHeight: 300, maxWidth: 500);
       if (pickedImage != null) {
         setState(() {
           image = File(pickedImage.path);
@@ -76,7 +87,8 @@ class _AddPlaceState extends State<AddPlace> {
   }
 
   Future _openGalley() async {
-    final imageGallery = await picker.pickImage(source: ImageSource.gallery);
+    final imageGallery = await picker.pickImage(
+        source: ImageSource.gallery, maxHeight: 300, maxWidth: 500);
     if (imageGallery != null) {
       setState(() {
         image = File(imageGallery.path);
@@ -223,182 +235,49 @@ class _AddPlaceState extends State<AddPlace> {
     }
 
     Widget nameInput() {
-      return Container(
-          margin: const EdgeInsets.only(bottom: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Nama', style: blackTextStyle),
-              const SizedBox(
-                height: 6.0,
-              ),
-              TextFormField(
-                controller: nameController,
-                style: blackTextStyle,
-                cursorColor: greenColor,
-                textCapitalization: TextCapitalization.words,
-                onChanged: (text) => setState(() {
-                  helperTextName = '';
-                }),
-                toolbarOptions: const ToolbarOptions(
-                    copy: true, cut: true, paste: true, selectAll: true),
-                decoration: InputDecoration(
-                    hintText: 'contoh: Tambal Ban Sentosa',
-                    hintStyle: grayTextStyle.copyWith(
-                        fontSize: 14.0, fontWeight: light),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                        borderSide: BorderSide(width: 1, color: grayColor)),
-                    focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                        borderSide: BorderSide(width: 1, color: greenColor)),
-                    contentPadding: const EdgeInsets.symmetric(
-                        vertical: 8.0, horizontal: 16.0)),
-              ),
-              const SizedBox(
-                height: 4.0,
-              ),
-              helperTextName.isNotEmpty
-                  ? Text(helperTextName,
-                      style: blackTextStyle.copyWith(
-                          color: Colors.red, fontSize: 12.0))
-                  : const SizedBox(),
-            ],
-          ));
+      return Input(
+          text: 'Nama',
+          controller: nameController,
+          hintText: 'contoh: Tambal Ban Sentosa',
+          helperText: helperTextName,
+          onChange: (text) => setState(() {
+                helperTextName = '';
+              }));
     }
 
     Widget addressInput() {
-      return Container(
-          margin: const EdgeInsets.only(bottom: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Alamat', style: blackTextStyle),
-              const SizedBox(
-                height: 6.0,
-              ),
-              TextFormField(
-                controller: addressController,
-                style: blackTextStyle,
-                cursorColor: greenColor,
-                textCapitalization: TextCapitalization.words,
-                onChanged: (text) => setState(() {
-                  helperTextAddress = '';
-                }),
-                toolbarOptions: const ToolbarOptions(
-                    copy: true, cut: true, paste: true, selectAll: true),
-                decoration: InputDecoration(
-                    hintText: 'contoh: Jalan Jend. Sudirman',
-                    hintStyle: grayTextStyle.copyWith(
-                        fontSize: 14.0, fontWeight: light),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                        borderSide: BorderSide(width: 1, color: grayColor)),
-                    focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                        borderSide: BorderSide(width: 1, color: greenColor)),
-                    contentPadding: const EdgeInsets.symmetric(
-                        vertical: 8.0, horizontal: 16.0)),
-              ),
-              const SizedBox(
-                height: 4.0,
-              ),
-              helperTextAddress.isNotEmpty
-                  ? Text(helperTextAddress,
-                      style: blackTextStyle.copyWith(
-                          color: Colors.red, fontSize: 12.0))
-                  : const SizedBox(),
-            ],
-          ));
+      return Input(
+          text: 'Alamat',
+          controller: addressController,
+          keyboardType: TextInputType.streetAddress,
+          hintText: 'contoh: Jalan Jend. Sudirman',
+          helperText: helperTextAddress,
+          onChange: (text) => setState(() {
+                helperTextAddress = '';
+              }));
     }
 
     Widget openTimeInput() {
-      return Container(
-          margin: const EdgeInsets.only(bottom: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Buka', style: blackTextStyle),
-              const SizedBox(
-                height: 6.0,
-              ),
-              TextFormField(
-                controller: openTimeController,
-                style: blackTextStyle,
-                cursorColor: greenColor,
-                onChanged: (text) => setState(() {
-                  helperTextOpenTime = '';
-                }),
-                toolbarOptions: const ToolbarOptions(
-                    copy: true, cut: true, paste: true, selectAll: true),
-                decoration: InputDecoration(
-                    hintText: 'contoh: 09:00 - 17:00',
-                    hintStyle: grayTextStyle.copyWith(
-                        fontSize: 14.0, fontWeight: light),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                        borderSide: BorderSide(width: 1, color: grayColor)),
-                    focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                        borderSide: BorderSide(width: 1, color: greenColor)),
-                    contentPadding: const EdgeInsets.symmetric(
-                        vertical: 8.0, horizontal: 16.0)),
-              ),
-              const SizedBox(
-                height: 4.0,
-              ),
-              helperTextOpenTime.isNotEmpty
-                  ? Text(helperTextOpenTime,
-                      style: blackTextStyle.copyWith(
-                          color: Colors.red, fontSize: 12.0))
-                  : const SizedBox(),
-            ],
-          ));
+      return Input(
+          text: 'Buka',
+          controller: openTimeController,
+          hintText: 'contoh: 09:00 - 17:00',
+          helperText: helperTextOpenTime,
+          onChange: (text) => setState(() {
+                helperTextOpenTime = '';
+              }));
     }
 
     Widget phoneNumberInput() {
-      return Container(
-          margin: const EdgeInsets.only(bottom: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Nomer WhatsApp', style: blackTextStyle),
-              const SizedBox(
-                height: 6.0,
-              ),
-              TextFormField(
-                controller: phoneNumberController,
-                style: blackTextStyle,
-                cursorColor: greenColor,
-                onChanged: (text) => setState(() {
-                  helperTextPhoneNumber = '';
-                }),
-                keyboardType: TextInputType.phone,
-                toolbarOptions: const ToolbarOptions(
-                    copy: true, cut: true, paste: true, selectAll: true),
-                decoration: InputDecoration(
-                    hintText: 'contoh: +62813xxx',
-                    hintStyle: grayTextStyle.copyWith(
-                        fontSize: 14.0, fontWeight: light),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                        borderSide: BorderSide(width: 1, color: grayColor)),
-                    focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                        borderSide: BorderSide(width: 1, color: greenColor)),
-                    contentPadding: const EdgeInsets.symmetric(
-                        vertical: 8.0, horizontal: 16.0)),
-              ),
-              const SizedBox(
-                height: 4.0,
-              ),
-              helperTextPhoneNumber.isNotEmpty
-                  ? Text(helperTextPhoneNumber,
-                      style: blackTextStyle.copyWith(
-                          color: Colors.red, fontSize: 12.0))
-                  : const SizedBox(),
-            ],
-          ));
+      return Input(
+          text: 'Nomer WhatsApp',
+          controller: phoneNumberController,
+          keyboardType: TextInputType.number,
+          hintText: 'contoh: +62813xxx',
+          helperText: helperTextPhoneNumber,
+          onChange: (text) => setState(() {
+                helperTextPhoneNumber = '';
+              }));
     }
 
     Widget locationInput() {
@@ -535,13 +414,13 @@ class _AddPlaceState extends State<AddPlace> {
           ));
     }
 
-    Widget serviceInput() {
+    Widget vehicleCheckBox() {
       return Container(
           margin: const EdgeInsets.only(bottom: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Layanan lain', style: blackTextStyle),
+              Text('Kendaraan', style: blackTextStyle),
               const SizedBox(
                 height: 6.0,
               ),
@@ -551,50 +430,96 @@ class _AddPlaceState extends State<AddPlace> {
                     borderRadius: BorderRadius.circular(8.0)),
                 child: Column(
                   children: [
-                    CheckboxListTile(
-                        title: Text(
-                          'Tubeless',
-                          style: blackTextStyle.copyWith(fontSize: 14.0),
-                        ),
-                        controlAffinity: ListTileControlAffinity.leading,
-                        value: isCheckedTubeless,
-                        activeColor: greenColor,
+                    LabeledCheckbox(
+                        label: 'Sepeda',
+                        value: isCheckedBycicle,
                         onChanged: (bool? value) {
                           setState(() {
-                            isCheckedTubeless = value!;
+                            isCheckedBycicle = value!;
                           });
                         }),
-                    CheckboxListTile(
-                        title: Text(
-                          'Nitrogen',
-                          style: blackTextStyle.copyWith(fontSize: 14.0),
-                        ),
-                        controlAffinity: ListTileControlAffinity.leading,
-                        value: isCheckedNitrogen,
-                        activeColor: greenColor,
+                    LabeledCheckbox(
+                        label: 'Motor',
+                        value: isCheckedMotorbike,
+                        selected: true,
                         onChanged: (bool? value) {
                           setState(() {
-                            isCheckedNitrogen = value!;
+                            isCheckedMotorbike = value!;
                           });
                         }),
-                    CheckboxListTile(
-                        title: Text(
-                          'Ganti ban',
-                          style: blackTextStyle.copyWith(fontSize: 14.0),
-                        ),
-                        controlAffinity: ListTileControlAffinity.leading,
-                        value: isCheckedGantiBan,
-                        activeColor: greenColor,
+                    LabeledCheckbox(
+                        label: 'Mobil',
+                        value: isCheckedCar,
                         onChanged: (bool? value) {
                           setState(() {
-                            isCheckedGantiBan = value!;
+                            isCheckedCar = value!;
                           });
                         }),
                   ],
                 ),
               ),
+              const SizedBox(
+                height: 4.0,
+              ),
+              helperTextVehicle.isNotEmpty
+                  ? Text(helperTextVehicle,
+                      style: blackTextStyle.copyWith(
+                          color: Colors.red, fontSize: 12.0))
+                  : const SizedBox(),
             ],
           ));
+    }
+
+    Widget homeServiceRadio() {
+      return Container(
+          margin: const EdgeInsets.only(bottom: 24.0),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Terima Panggilan', style: blackTextStyle),
+            const SizedBox(
+              height: 6.0,
+            ),
+            Container(
+                decoration: BoxDecoration(
+                    border: Border.all(width: 1, color: grayColor),
+                    borderRadius: BorderRadius.circular(8.0)),
+                child: Column(children: [
+                  LabeledRadio(
+                    label: 'Ya',
+                    padding: const EdgeInsets.all(10.0),
+                    groupValue: homeServiceSelected,
+                    value: true,
+                    onChanged: (bool newValue) {
+                      setState(() {
+                        homeServiceSelected = newValue;
+                      });
+                    },
+                  ),
+                  LabeledRadio(
+                    label: 'Tidak',
+                    padding: const EdgeInsets.all(10.0),
+                    groupValue: homeServiceSelected,
+                    value: false,
+                    onChanged: (bool newValue) {
+                      setState(() {
+                        homeServiceSelected = newValue;
+                      });
+                    },
+                  )
+                ]))
+          ]));
+    }
+
+    Widget servicesInput() {
+      return Input(
+          text: 'Layanan',
+          controller: servicesController,
+          keyboardType: TextInputType.multiline,
+          hintText: 'contoh: Ganti ban, Nitrogen, Tubeless',
+          helperText: helperTextServices,
+          onChange: (text) => setState(() {
+                helperTextServices = '';
+              }));
     }
 
     Widget buttonSave() {
@@ -603,12 +528,18 @@ class _AddPlaceState extends State<AddPlace> {
           if (state is PlaceSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                 backgroundColor: greenColor,
+                duration: const Duration(milliseconds: 1500),
                 content: Text(
                   'Data berhasil disimpan!',
                   style: whiteTextStyle,
                 )));
-            Navigator.pushNamedAndRemoveUntil(
-                context, '/started', (route) => false);
+            Timer(
+              const Duration(milliseconds: 2000),
+              () {
+                Navigator.pushNamedAndRemoveUntil(
+                    context, '/started', (route) => false);
+              },
+            );
           } else if (state is PlaceFailed) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                 backgroundColor: Colors.red,
@@ -620,7 +551,10 @@ class _AddPlaceState extends State<AddPlace> {
         },
         builder: (context, state) {
           if (state is PlaceLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(
+                child: CircularProgressIndicator(
+              color: greenColor,
+            ));
           }
           return MaterialButton(
             color: greenColor,
@@ -652,8 +586,7 @@ class _AddPlaceState extends State<AddPlace> {
               }
               if (phoneNumberController.text.isEmpty) {
                 setState(() {
-                  helperTextPhoneNumber =
-                      'Nomer WhatsApp boleh bisa diisi "-"!';
+                  helperTextPhoneNumber = 'Nomer WhatsApp boleh diisi "-"!';
                 });
               }
               if (latitudeController.text.isEmpty) {
@@ -666,13 +599,37 @@ class _AddPlaceState extends State<AddPlace> {
                   helperTextLongitude = 'Longitude harus diisi!';
                 });
               }
+              if (!isCheckedBycicle && !isCheckedMotorbike && !isCheckedCar) {
+                setState(() {
+                  helperTextVehicle = 'Kendaraan harus diisi!';
+                });
+              }
+              if (servicesController.text.isEmpty) {
+                setState(() {
+                  helperTextServices = 'Layanan harus diisi!';
+                });
+              }
               final String id =
                   DateTime.now().microsecondsSinceEpoch.toString();
+              final String dateNow = DateTime.now().toString();
               final String fileName = basename(image!.path);
               String fullName = '';
-              String prefixName = nameController.text.substring(1, 6);
+              String prefixName = nameController.text.substring(0, 6);
+              print(prefixName);
               if (prefixName.toLowerCase() != 'tambal') {
                 fullName = 'Tambal Ban ${nameController.text}';
+              } else {
+                fullName = nameController.text;
+              }
+              List _vehicle = [];
+              if (isCheckedBycicle) {
+                _vehicle.add('Sepeda');
+              }
+              if (isCheckedMotorbike) {
+                _vehicle.add('Motor');
+              }
+              if (isCheckedCar) {
+                _vehicle.add('Mobil');
               }
               try {
                 PlaceModel place = PlaceModel(
@@ -683,9 +640,12 @@ class _AddPlaceState extends State<AddPlace> {
                   phoneNumber: phoneNumberController.text,
                   latitude: double.parse(latitudeController.text),
                   longitude: double.parse(longitudeController.text),
-                  tubeless: isCheckedTubeless,
-                  nitrogen: isCheckedNitrogen,
-                  gantiBan: isCheckedGantiBan,
+                  vehicle: _vehicle,
+                  homeService: homeServiceSelected,
+                  services: servicesController.text,
+                  status: 'pending',
+                  createdAt: dateNow,
+                  updatedAt: dateNow,
                 );
                 context.read<PlaceCubit>().createPlace(place, image, fileName);
               } catch (err) {
@@ -747,7 +707,9 @@ class _AddPlaceState extends State<AddPlace> {
                       openTimeInput(),
                       phoneNumberInput(),
                       locationInput(),
-                      serviceInput(),
+                      servicesInput(),
+                      vehicleCheckBox(),
+                      homeServiceRadio(),
                       buttonSave(),
                       const SizedBox(
                         height: 24.0,
@@ -758,6 +720,7 @@ class _AddPlaceState extends State<AddPlace> {
               ),
             ]);
           }
+
           return Center(
               child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

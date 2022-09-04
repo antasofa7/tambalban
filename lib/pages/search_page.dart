@@ -58,7 +58,7 @@ class _SearchPageState extends State<SearchPage> {
   List<Map> sortByDistance(List<PlaceModel> places) {
     List<Map<dynamic, dynamic>> placesWithdistance = [];
 
-    for (var place in places) {
+    for (PlaceModel place in places) {
       distanceInMeters = Geolocator.distanceBetween(
               lat, long, place.latitude, place.longitude) /
           1000;
@@ -105,7 +105,7 @@ class _SearchPageState extends State<SearchPage> {
             children: [
               Container(
                 width: double.infinity,
-                height: 80.0,
+                height: 70.0,
                 margin: const EdgeInsets.only(bottom: 12.0),
                 decoration: BoxDecoration(
                     color: grayColor.withOpacity(0.5),
@@ -116,7 +116,7 @@ class _SearchPageState extends State<SearchPage> {
     }
 
     Widget listView(List<PlaceModel> places) {
-      var sort = sortByDistance(places);
+      List<Map<dynamic, dynamic>> sort = sortByDistance(places);
       return SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           sliver: SliverList(
@@ -172,7 +172,7 @@ class _SearchPageState extends State<SearchPage> {
     }
 
     Widget gridView(List<PlaceModel> places) {
-      var sort = sortByDistance(places);
+      List<Map<dynamic, dynamic>> sort = sortByDistance(places);
       return SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           sliver: SliverGrid(
@@ -334,6 +334,9 @@ class _SearchPageState extends State<SearchPage> {
           body: BlocBuilder<PlaceCubit, PlaceState>(
             builder: (context, statePlace) {
               if (statePlace is PlaceSuccess) {
+                List<PlaceModel> approvedPlaces = statePlace.places
+                    .where((p) => p.status == 'approved')
+                    .toList();
                 return CustomScrollView(
                   slivers: [
                     SliverAppBar(
@@ -351,7 +354,7 @@ class _SearchPageState extends State<SearchPage> {
                         )),
                     !isShowGrid
                         ? listView(statePlace.places)
-                        : gridView(statePlace.places),
+                        : gridView(approvedPlaces),
                     const SliverPadding(padding: EdgeInsets.only(bottom: 26.0)),
                     SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),

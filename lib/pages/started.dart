@@ -107,7 +107,7 @@ class _StartedPageState extends State<StartedPage> {
                       color: whiteColor),
                 ),
                 const Spacer(),
-                InkWell(
+                GestureDetector(
                   onTap: () {
                     setState(() {
                       checkGps();

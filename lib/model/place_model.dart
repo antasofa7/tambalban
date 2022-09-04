@@ -8,9 +8,12 @@ class PlaceModel extends Equatable {
   final String phoneNumber;
   final double latitude;
   final double longitude;
-  final bool tubeless;
-  final bool nitrogen;
-  final bool gantiBan;
+  final List vehicle;
+  final bool homeService;
+  final String services;
+  final String status;
+  final String createdAt;
+  final String updatedAt;
   final String imageUrl;
 
   const PlaceModel({
@@ -21,9 +24,12 @@ class PlaceModel extends Equatable {
     this.phoneNumber = '',
     this.latitude = 0.0,
     this.longitude = 0.0,
-    this.tubeless = true,
-    this.nitrogen = true,
-    this.gantiBan = true,
+    this.vehicle = const [],
+    this.homeService = true,
+    this.services = '',
+    this.status = '',
+    this.createdAt = '',
+    this.updatedAt = '',
     this.imageUrl = '',
   });
 
@@ -36,9 +42,12 @@ class PlaceModel extends Equatable {
         phoneNumber: json['phoneNumber'],
         latitude: json['latitude'],
         longitude: json['longitude'],
-        tubeless: json['tubeless'],
-        nitrogen: json['nitrogen'],
-        gantiBan: json['gantiBan'],
+        vehicle: json['vehicle'],
+        homeService: json['homeService'],
+        services: json['services'],
+        status: json['status'],
+        createdAt: json['createdAt'],
+        updatedAt: json['updatedAt'],
         imageUrl: json['imageUrl'],
       );
 
@@ -50,9 +59,12 @@ class PlaceModel extends Equatable {
         'phoneNumber': phoneNumber,
         'latitude': latitude,
         'longitude': longitude,
-        'tubeless': tubeless,
-        'nitrogen': nitrogen,
-        'gantiBan': gantiBan,
+        'vehicle': vehicle,
+        'homeService': homeService,
+        'services': services,
+        'status': status,
+        'createdAt': createdAt,
+        'updatedAt': updatedAt,
         'imageUrl': imageUrl,
       };
 
@@ -65,9 +77,12 @@ class PlaceModel extends Equatable {
         phoneNumber,
         latitude,
         longitude,
-        tubeless,
-        nitrogen,
-        gantiBan,
+        vehicle,
+        homeService,
+        services,
+        status,
+        createdAt,
+        updatedAt,
         imageUrl,
       ];
 }

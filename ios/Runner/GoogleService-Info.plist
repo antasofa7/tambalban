@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>742528959230-u79uqnnt999cf9ndmev2lroded004vof.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.742528959230-u79uqnnt999cf9ndmev2lroded004vof</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBXItn1qYCN_6eb1vbwLv24dvW-RVArXf0</string>
+	<key>GCM_SENDER_ID</key>
+	<string>742528959230</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.tambalBan</string>
+	<key>PROJECT_ID</key>
+	<string>tambal-ban-3081c</string>
+	<key>STORAGE_BUCKET</key>
+	<string>tambal-ban-3081c.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:742528959230:ios:2e48ffae09c3f63ad79baf</string>
+</dict>
+</plist>

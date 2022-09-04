@@ -326,31 +326,37 @@ class _HomePageState extends State<HomePage> {
         },
         builder: (context, state) {
           if (state is PlaceLoading) {
-            return SizedBox(
-                child: Shimmer.fromColors(
-              baseColor: grayColor.withOpacity(0.5),
-              highlightColor: grayColor.withOpacity(0.1),
-              child: Column(
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    decoration: BoxDecoration(
-                        color: grayColor.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(8.0)),
-                  ),
-                ],
-              ),
-            ));
+            return Container(
+                width: double.infinity,
+                height: double.infinity,
+                color: whiteColor,
+                child: Center(
+                    child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      color: greenColor,
+                    ),
+                    const SizedBox(
+                      height: 12.0,
+                    ),
+                    Text(
+                      'Loading...',
+                      style: blackTextStyle,
+                    ),
+                  ],
+                )));
           } else if (state is PlaceSuccess) {
             addMarkers(state, bottomSheet);
           }
-          return GoogleMap(
-            myLocationEnabled: true,
-            onMapCreated: onMapCreated,
-            initialCameraPosition: CameraPosition(target: center, zoom: 12.0),
-            markers: Set.from(markers),
-            mapType: MapType.normal,
+          return SizedBox(
+            child: GoogleMap(
+              myLocationEnabled: true,
+              onMapCreated: onMapCreated,
+              initialCameraPosition: CameraPosition(target: center, zoom: 12.0),
+              markers: Set.from(markers),
+              mapType: MapType.normal,
+            ),
           );
         },
       );
@@ -397,7 +403,7 @@ class _HomePageState extends State<HomePage> {
     Widget nearestPlace() {
       return SizedBox.expand(
         child: DraggableScrollableSheet(
-          initialChildSize: 0.3,
+          initialChildSize: 0.4,
           minChildSize: 0.15,
           maxChildSize: 0.75,
           builder: (context, scrollController) {
@@ -445,35 +451,40 @@ class _HomePageState extends State<HomePage> {
                         }
                       }, builder: (context, state) {
                         if (state is PlaceLoading) {
-                          return SizedBox(
+                          return Container(
+                              padding: const EdgeInsets.all(24),
                               child: Shimmer.fromColors(
-                            baseColor: grayColor.withOpacity(0.5),
-                            highlightColor: grayColor.withOpacity(0.1),
-                            child: Column(
-                              children: [
-                                Container(
-                                  width: double.infinity,
-                                  height: 80.0,
-                                  decoration: BoxDecoration(
-                                      color: grayColor.withOpacity(0.5),
-                                      borderRadius: BorderRadius.circular(8.0)),
+                                baseColor: grayColor.withOpacity(0.5),
+                                highlightColor: grayColor.withOpacity(0.1),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      width: double.infinity,
+                                      height: 80.0,
+                                      decoration: BoxDecoration(
+                                          color: grayColor.withOpacity(0.5),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0)),
+                                    ),
+                                    const SizedBox(
+                                      height: 12,
+                                    ),
+                                    Container(
+                                      width: double.infinity,
+                                      height: 80.0,
+                                      decoration: BoxDecoration(
+                                          color: grayColor.withOpacity(0.5),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0)),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(
-                                  height: 12,
-                                ),
-                                Container(
-                                  width: double.infinity,
-                                  height: 80.0,
-                                  decoration: BoxDecoration(
-                                      color: grayColor.withOpacity(0.5),
-                                      borderRadius: BorderRadius.circular(8.0)),
-                                ),
-                              ],
-                            ),
-                          ));
+                              ));
                         } else if (state is PlaceSuccess) {
-                          List<PlaceModel> places = state.places;
-                          var sort = sortByDistance(places);
+                          List<PlaceModel> approvedPlaces = state.places
+                              .where((p) => p.status == 'approved')
+                              .toList();
+                          var sort = sortByDistance(approvedPlaces);
                           return sort.isEmpty
                               ? Container(
                                   padding: const EdgeInsets.all(24),
@@ -517,25 +528,16 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                     )
                                   : Container(
-                                      padding: const EdgeInsets.all(24),
+                                      margin: const EdgeInsets.only(top: 40),
                                       child: Column(children: [
                                         Text(
-                                          'Belum ada data lokasi tambal ban terdekat!',
+                                          'Belum ada data lokasi tambal ban di sekitar Anda!',
                                           style: blackTextStyle.copyWith(
-                                              fontWeight: medium,
                                               fontSize: 16.0),
                                           textAlign: TextAlign.center,
                                         ),
                                         const SizedBox(
-                                          height: 8.0,
-                                        ),
-                                        Text(
-                                          'Tambahkan data lokasi tambal ban di sekitar Anda!',
-                                          style: grayTextStyle,
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        const SizedBox(
-                                          height: 8.0,
+                                          height: 16.0,
                                         ),
                                         TextButton(
                                           onPressed: () {
@@ -550,16 +552,42 @@ class _HomePageState extends State<HomePage> {
                                                       BorderRadius.circular(
                                                           8.0))),
                                           child: Text(
-                                            'Tambah Tambal Ban',
+                                            'Tambah Lokasi Tambal Ban',
                                             style: whiteTextStyle,
                                           ),
                                         )
                                       ]),
                                     );
                         }
-                        return const Center(
-                          child: CircularProgressIndicator(),
-                        );
+                        return Container(
+                            padding: const EdgeInsets.all(24),
+                            child: Shimmer.fromColors(
+                              baseColor: grayColor.withOpacity(0.5),
+                              highlightColor: grayColor.withOpacity(0.1),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: double.infinity,
+                                    height: 80.0,
+                                    decoration: BoxDecoration(
+                                        color: grayColor.withOpacity(0.5),
+                                        borderRadius:
+                                            BorderRadius.circular(8.0)),
+                                  ),
+                                  const SizedBox(
+                                    height: 12,
+                                  ),
+                                  Container(
+                                    width: double.infinity,
+                                    height: 80.0,
+                                    decoration: BoxDecoration(
+                                        color: grayColor.withOpacity(0.5),
+                                        borderRadius:
+                                            BorderRadius.circular(8.0)),
+                                  ),
+                                ],
+                              ),
+                            ));
                       })
                     ]));
           },
@@ -632,21 +660,16 @@ class _HomePageState extends State<HomePage> {
               child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                'Internet tidak terhubung',
-                style: blackTextStyle,
+              CircularProgressIndicator(
+                color: blackColor,
               ),
               const SizedBox(
                 height: 12.0,
               ),
-              TextButton(
-                  onPressed: () {
-                    context
-                        .read<ConnectedCubit>()
-                        .connectivityStreamSubcription;
-                  },
-                  child: Text('Muat Ulang', style: whiteTextStyle),
-                  style: TextButton.styleFrom(backgroundColor: greenColor)),
+              Text(
+                'Loading...',
+                style: blackTextStyle,
+              ),
             ],
           ));
         },

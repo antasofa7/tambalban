@@ -22,9 +22,12 @@ class PlaceService {
         'phoneNumber': place.phoneNumber,
         'latitude': place.latitude,
         'longitude': place.longitude,
-        'tubeless': place.tubeless,
-        'nitrogen': place.nitrogen,
-        'gantiBan': place.gantiBan,
+        'vehicle': place.vehicle,
+        'homeService': place.homeService,
+        'services': place.services,
+        'status': place.status,
+        'createdAt': place.createdAt,
+        'updatedAt': place.updatedAt,
         'imageUrl': downloadUrl,
       });
     } catch (err) {
