@@ -10,7 +10,7 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <meta-data android:name="com.google.android.geo.API_KEY"  
-             android:value="AIzaSyCm6jIcin_FqtcCabv1wG57dcSIR-gxrLk"/>
+             android:value=""/>
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -39,6 +39,6 @@
             android:value="2" />
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-8364630765022754~8440652985"/>
+            android:value=""/>
     </application>
 </manifest>
