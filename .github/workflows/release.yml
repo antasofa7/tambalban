@@ -1,0 +1,122 @@
+name: Release
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Compile (fast check)
+        run: ./gradlew compileDebugKotlin
+
+      - name: Lint
+        run: ./gradlew lint
+
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest
+
+      - name: Verify tag matches versionName
+        run: |
+          MANIFEST_VERSION="v$(grep 'versionName' app/build.gradle.kts | head -1 | sed -E 's/.*versionName *= *"([^"]+)".*/\1/')"
+          TAG_VERSION="${GITHUB_REF_NAME}"
+          if [ "$MANIFEST_VERSION" != "$TAG_VERSION" ]; then
+            echo "Tag $TAG_VERSION does not match app/build.gradle.kts versionName $MANIFEST_VERSION"; exit 1
+          fi
+
+  build:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build release APK
+        run: ./gradlew assembleRelease
+
+      - name: Upload release APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tambalban-release-apk
+          path: app/build/outputs/apk/release/*.apk
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download release APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tambalban-release-apk
+          path: artifacts
+
+      - name: Extract CHANGELOG section for this tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="## [$VERSION]" '
+            $0 ~ "^## " { if (found) exit; if (index($0, ver) == 1) { found=1; next } }
+            found { print }
+          ' CHANGELOG.md > release_notes.md
+          if [ ! -s release_notes.md ]; then
+            echo "No CHANGELOG section found for $VERSION; using tag name as fallback." > release_notes.md
+          fi
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: TambalBan ${{ github.ref_name }}
+          body_path: release_notes.md
+          files: artifacts/**
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Publishing to Google Play requires this repo's Play Console service-account
+  # credentials to be configured as a secret (and the app's Play listing to
+  # already exist), plus explicit user go-ahead, before this job runs for
+  # real. Left commented out until both are done.
+  # publish:
+  #   needs: release
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Download release AAB/APK artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: tambalban-release-apk
+  #         path: artifacts
+  #     - name: Publish to Google Play
+  #       uses: r0adkll/upload-google-play@v1
+  #       with:
+  #         serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+  #         packageName: com.tambal_ban
+  #         releaseFiles: artifacts/*.apk
+  #         track: production
